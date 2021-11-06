@@ -2,9 +2,6 @@ import numpy as np
 import itertools
 
 
-
-
-
 def func_1b(b, x):
     out = [0 if i < b else 1 for i in x]
     return np.array(out)
@@ -13,106 +10,6 @@ def func_1b(b, x):
 def func_2b(b1, b2, x):
     out = [0 if i < b1 else 1 if i < b2 else 0 for i in x]
     return np.array(out)
-
-
-def optimizer_1b(x, y):
-    """
-    returns the boundary index (0 up to the index exclusive, 1 beyond it).
-    Inputs:
-        x - sorted x-value vector
-        y - corresponding labels
-    Outputs:
-        b - optimal boundary parameter
-        minval - optimal loss on (x,y) obtained with parameter b
-    """
-    losses = np.array([])
-    for i in range(len(x)+1):
-        zeros = y[0:i]
-        ones = y[i:len(x)]
-        zero_loss = sum(zeros) if len(zeros)>0 else 0
-        one_loss = np.sum(1 - np.array(ones)) if len(ones)>0 else 0
-        loss = one_loss + zero_loss
-        losses = np.append(losses, loss)
-    minidx = np.argmin(np.array(losses))
-    minval = np.min(np.array(losses)/len(losses))
-    if minidx == len(x):
-        b = x[-1]
-    elif minidx == 0:
-        b = x[0]
-    else:
-        b = (x[minidx] + x[minidx - 1]) / 2
-    return b, minval
-
-
-def optimizer_1b_subopt(x, y):
-    """
-    returns the boundary index (0 up to the index exclusive, 1 beyond it).
-    Inputs:
-        x - sorted x-value vector. type can be list or array
-        y - corresponding labels. type can be list or array
-    Outputs:
-        b - optimal boundary parameter
-        minval - optimal loss on (x,y) obtained with parameter b
-    """
-    losses = np.array([])
-    params = np.append(np.append(0, x), 1)
-    for i, b in enumerate(params):
-        hypothesis_labels = func_1b(b, x)
-        loss = np.mean(np.abs(hypothesis_labels - np.array(y)))
-        losses = np.append(losses, loss)
-    minval = np.min(losses)
-    minidx = np.argmin(losses)
-    b_opt = params[minidx]
-    return b_opt, minval
-
-def optimizer_1b_sticky(x, y, margin=1e-8):
-    """
-    returns the boundary index (0 up to the index exclusive, 1 beyond it).
-    Inputs:
-        x - sorted x-value vector. type can be list or array
-        y - corresponding labels. type can be list or array
-    Outputs:
-        b - optimal boundary parameter
-        minval - optimal loss on (x,y) obtained with parameter b
-    """
-    losses = np.array([])
-    params = np.append(np.append(0, x), 1)
-    for i, b in enumerate(params):
-        hypothesis_labels = func_1b(b, x)
-        loss = np.mean(np.abs(hypothesis_labels - np.array(y)))
-        losses = np.append(losses, loss)
-    minval = np.min(losses)
-    minidx = np.argmin(losses)
-    b_opt = params[minidx]
-    if b_opt == 0:
-        b_opt = x[0]
-    elif b_opt == 1:
-        b_opt = x[-1] + margin
-    return b_opt, minval
-
-
-
-def optimizer_1b_min(x, y):
-    """
-    returns the boundary index (0 up to the index exclusive, 1 beyond it).
-    Inputs:
-        x - sorted x-value vector. type can be list or array
-        y - corresponding labels. type can be list or array
-    Outputs:
-        b - optimal boundary parameter
-        minval - optimal loss on (x,y) obtained with parameter b
-    """
-    losses = np.array([])
-    params = np.append(np.append(0, x), 1)
-    for i, b in enumerate(params):
-        hypothesis_labels = func_1b(b, x)
-        loss = np.mean(np.abs(hypothesis_labels - np.array(y)))
-        losses = np.append(losses, loss)
-    minval = np.amin(losses)
-    min_indices = np.where(np.isclose(losses, np.amin(losses)))
-    min_idx = min_indices[0][0]
-    b_opt = params[min_idx]
-    return b_opt, minval
 
 
 class BinaryFunction:
