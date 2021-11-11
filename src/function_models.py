@@ -12,12 +12,34 @@ def func_2b(b1, b2, x):
     return np.array(out)
 
 
+class BaseFunction:
+    def __init__(self, parameters):
+        self.parameters = parameters
+
+    def get_labels(self, x):
+        pass
+
+    def get_risk(self, func_obj):
+        pass
+
+    def get_approx_hypoth(self, param_approx):
+        pass
+
+    def get_empirical_risk(self, features, param_approx):
+        pass
+
+    def __str__(self):
+        return str(self.parameters)
+
+
 class BinaryFunction:
     def __init__(self, parameters):
         if isinstance(parameters, int):
             self.parameters = np.random.uniform(low=0, high=1, size=(parameters,))
+            self.parameters.sort()
         else:
-            self.parameters = parameters
+            self.parameters = np.array(parameters)
+            self.parameters.sort()
 
     def get_labels(self, x):
         params = np.append(np.append(0, self.parameters), 1)
@@ -82,16 +104,45 @@ class BinaryFunction:
             risk += (right - left)*abs(dict1[(round(left, 10), round(right, 10))] - dict2[(round(left, 10), round(right, 10))])
         return round(risk, 10)
 
+    @staticmethod
+    def get_empirical_risk(binary_func, features, num_param_approx):
+        labels = binary_func.get_labels(features)
+        losses = np.array([])
+        opt_params_choices = []
+        params = np.append(np.append(0, features), 1)
+        combs = itertools.chain([(i, i) for i in params],itertools.combinations(params, 2))
+        for hypoth_params in combs: #itertools.product(params, repeat=num_param_approx):
+            hypoth_params = list(hypoth_params)
+            hypoth = BinaryFunction(hypoth_params)
+            hypoth_labels = hypoth.get_labels(features)
+            loss = np.mean(np.abs(hypoth_labels - labels))
+            losses = np.append(losses, loss)
+            opt_params_choices.append(hypoth_params)
+
+        min_loss = np.amin(losses)
+        min_indices = np.where(np.isclose(losses, np.amin(losses)))[0]
+        candidates = [opt_params_choices[i] for i in min_indices]
+        param_idx = 0
+        while len(candidates) > 1 and param_idx < num_param_approx:
+            p = [x[param_idx] for x in candidates]
+            max_params = np.where(np.isclose(p, np.amax(p)))[0]
+            candidates = [candidates[i] for i in max_params]
+            param_idx += 1
+
+        opt_params = np.array(candidates[0])
+        return min_loss, opt_params
+
     def get_approx_hypoth(self, num_params):
         if len(self.parameters) <= num_params:
             return 0, self.parameters, True
         opt_params = None
         min_risk = 10
         is_unique = True
-        for parameters in itertools.product(self.parameters, repeat=num_params):
+        params = np.append(np.append(0, self.parameters), 1)
+        for parameters in itertools.product(params, repeat=num_params):
             parameters = list(parameters)
             if sorted(parameters) == parameters:
-                risk = BinaryFunction.get_risk(parameters, self.parameters)
+                risk = BinaryFunction.get_risk(np.array(parameters), self.parameters)
                 if risk == min_risk:
                     is_unique = False
                 elif risk < min_risk:
@@ -99,6 +150,9 @@ class BinaryFunction:
                     min_risk = risk
                     opt_params = parameters
         return min_risk, opt_params, is_unique
+
+    def __str__(self):
+        return str(self.parameters)
 
 
 
