@@ -2,6 +2,9 @@ from src.optimizers import optimizer_1b_subopt, optimizer_1b_sticky,optimizer_1b
 from src.function_models import BinaryFunction, func_1b, func_2b
 import numpy as np
 
+AllPlots = ["risk", "risk_std", "emp_risk", "gen_error", "parameters"]
+DefaultPlots = ["risk", "risk_std", "parameters"]
+
 
 class SimConfig:
     def __init__(self,
@@ -11,6 +14,7 @@ class SimConfig:
                  num_train_examples=2,
                  num_repeat=1,
                  tag="Default",
+                 plots=DefaultPlots,
                  dest_dir=None
                  ):
         self.tag = tag
@@ -19,6 +23,7 @@ class SimConfig:
         self.gt_func = gt_func
         self.teacher_func = teacher_func
         self.student_num_params = student_num_params
+        self.plots = plots
         self.dest_dir = dest_dir
 
     def load_config(self, sim_config):
@@ -32,6 +37,8 @@ class SimConfig:
 
     def __str__(self):
         return "\n".join([f"{attr} = {val}" for attr, val in self.__dict__.items()])
+
+
 
 
 '''
