@@ -42,6 +42,7 @@ def multinomial_coeff(k, n_lst):
     return num / denom
 
 
+
 def density_kd(x, k):
     """
     computes the density of the KD student with k examples at point x.

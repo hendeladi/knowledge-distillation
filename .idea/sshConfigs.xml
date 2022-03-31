@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig connectionConfig="{&quot;serverAliveInterval&quot;:300}" host="3.17.164.175" id="1d5b0cf8-e879-4f83-88d4-a36fb3c81b9f" keyPath="C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\amazon\adihendel.pem" port="22" customName="3.17.164.175" nameFormat="CUSTOM" username="ubuntu">
+        <option name="customName" value="3.17.164.175" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

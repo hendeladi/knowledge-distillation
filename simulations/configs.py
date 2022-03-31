@@ -172,9 +172,118 @@ example_2params_student = SimConfig(
     gt_func=bin_func,
     teacher_func=BinaryFunction(bin_func.get_approx_hypoth(2)[1]),
     student_num_params=2,
-    num_train_examples=50,
+    num_train_examples=70,
     num_repeat=10000,
     tag="example_student2params_gt7params",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+############## Example  3 params student #############################################
+bin_func = BinaryFunction([0.1, 0.15, 0.19, 0.3, 0.55, 0.6, 0.66, 0.7, 0.81, 0.93])
+example_student3params_gt10params = SimConfig(
+    gt_func=bin_func,
+    teacher_func=BinaryFunction(bin_func.get_approx_hypoth(3)[1]),
+    student_num_params=3,
+    num_train_examples=70,
+    num_repeat=10000,
+    tag="example_student3params_gt10params",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+
+
+############## Theory check2 #############################################
+g1 = BinaryFunction([0.05, 0.1, 0.7, 0.8, 0.85])
+g2 = BinaryFunction([0.3, 0.43, 0.7])
+example_theory_check2 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=100,
+    num_repeat=10000,
+    tag="example_theory_check2",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+############## Theory check3 #############################################
+g1 = BinaryFunction([0.05, 0.2, 0.7])
+g2 = BinaryFunction([0.25, 0.4, 0.7])
+example_theory_check3 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=85,
+    num_repeat=20000,
+    tag="example_theory_check3",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+
+############## Theory check4 #############################################
+g1 = BinaryFunction([0.05, 0.2, 0.7])
+g2 = BinaryFunction([0.25, 0.4, 0.7])
+example_theory_check4 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=85,
+    num_repeat=20000,
+    tag="example_theory_check4",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+
+############## Theory check5 #############################################
+g1 = BinaryFunction([0.2, 0.4, 0.7])
+g2 = BinaryFunction([0.2, 0.4, 0.7, 0.9, 0.95])
+example_theory_check5 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=85,
+    num_repeat=20000,
+    tag="example_theory_check5",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+############## Theory check6 #############################################
+g1 = BinaryFunction([0.2, 0.4, 0.7])
+g2 = BinaryFunction([0.2, 0.4, 0.7, 0.9, 0.95])
+example_theory_check6 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=105,
+    num_repeat=20000,
+    tag="example_theory_check6",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+
+############## Theory check7 #############################################
+g1 = BinaryFunction([0.4, 0.5, 0.7])
+g2 = BinaryFunction([0.05, 0.1, 0.4, 0.5, 0.7])
+example_theory_check7 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=120,
+    num_repeat=20000,
+    tag="example_theory_check7",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+
+############## Theory check8 #############################################
+g1 = BinaryFunction([0.4, 0.5, 0.7])
+g2 = BinaryFunction([0.05, 0.15, 0.4, 0.5, 0.7])
+example_theory_check8 = SimConfig(
+    gt_func=g2,
+    teacher_func=g1,
+    student_num_params=1,
+    num_train_examples=80,
+    num_repeat=20000,
+    tag="example_theory_check8",
     dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
 )
 '''

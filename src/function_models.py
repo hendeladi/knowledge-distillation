@@ -110,7 +110,7 @@ class BinaryFunction:
         losses = np.array([])
         opt_params_choices = []
         params = np.append(np.append(0, features), 1)
-        combs = itertools.chain([(i, i) for i in params],itertools.combinations(params, 2))
+        combs = itertools.chain([tuple([i]*num_param_approx) for i in params],itertools.combinations(params, num_param_approx))
         for hypoth_params in combs: #itertools.product(params, repeat=num_param_approx):
             hypoth_params = list(hypoth_params)
             hypoth = BinaryFunction(hypoth_params)
