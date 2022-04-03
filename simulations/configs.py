@@ -6,6 +6,16 @@ AllPlots = ["risk", "risk_std", "emp_risk", "gen_error", "parameters"]
 DefaultPlots = ["risk", "risk_std", "parameters"]
 
 
+class ConfigDict:
+    def __init__(self, conf_lst):
+        self.config_dict = {}
+        for conf in conf_lst:
+            self.config_dict[conf.tag] = conf
+
+    def __getitem__(self, item):
+        return self.config_dict[item]
+
+
 class SimConfig:
     def __init__(self,
                  gt_func=None,
@@ -36,7 +46,14 @@ class SimConfig:
         self.dest_dir = sim_config.dest_dir
 
     def __str__(self):
-        return "\n".join([f"{attr} = {val}" for attr, val in self.__dict__.items()])
+        lst = []
+        for attr, val in self.__dict__.items():
+            if isinstance(val, list):
+                lst.append(f"{attr} = {[v.__str__() for v in val]}")
+            else:
+                lst.append(f"{attr} = {val}")
+
+        return "\n".join(lst)
 
 
 
@@ -191,16 +208,31 @@ example_student3params_gt10params = SimConfig(
 )
 
 
+############## Theory check1 #############################################
+g1 = BinaryFunction([0.25, 0.3, 0.55, 0.6, 0.7])
+g2 = BinaryFunction([0.05, 0.2, 0.7])
+fopt = BinaryFunction([0.7])
+example_theory_check1 = SimConfig(
+    gt_func=fopt,
+    teacher_func=[g1, g2],
+    student_num_params=1,
+    num_train_examples=80,
+    num_repeat=20000,
+    tag="example_theory_check1",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
 
 ############## Theory check2 #############################################
-g1 = BinaryFunction([0.05, 0.1, 0.7, 0.8, 0.85])
-g2 = BinaryFunction([0.3, 0.43, 0.7])
+g1 = BinaryFunction([0.05, 0.15, 0.7])
+g2 = BinaryFunction([0.25, 0.35, 0.7])
+g3 = BinaryFunction([0.45, 0.55, 0.7])
+fopt = BinaryFunction([0.7])
 example_theory_check2 = SimConfig(
-    gt_func=g2,
-    teacher_func=g1,
+    gt_func=fopt,
+    teacher_func=[g1, g2, g3],
     student_num_params=1,
-    num_train_examples=100,
-    num_repeat=10000,
+    num_train_examples=80,
+    num_repeat=20000,
     tag="example_theory_check2",
     dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
 )
@@ -286,6 +318,35 @@ example_theory_check8 = SimConfig(
     tag="example_theory_check8",
     dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
 )
+############## Theory check8 new #############################################
+g1 = BinaryFunction([0.4, 0.5, 0.7])
+g2 = BinaryFunction([0.05, 0.15, 0.4, 0.5, 0.7])
+fopt = BinaryFunction([0.7])
+example_theory_check8_new = SimConfig(
+    gt_func=fopt,
+    teacher_func=[g1, g2],
+    student_num_params=1,
+    num_train_examples=80,
+    num_repeat=20000,
+    tag="example_theory_check8",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+############## Theory check8 new #############################################
+g1 = BinaryFunction([0.4, 0.5, 0.7])
+g2 = BinaryFunction([0.05, 0.15, 0.4, 0.5, 0.7])
+fopt = BinaryFunction([0.7])
+test = SimConfig(
+    gt_func=fopt,
+    teacher_func=[g1, g2],
+    student_num_params=1,
+    num_train_examples=20,
+    num_repeat=4,
+    tag="test",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
+
+CONFIGS = ConfigDict([example_theory_check1, example_theory_check2, test])
 '''
 ############## Example 2 v2 #############################################
 

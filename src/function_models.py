@@ -152,7 +152,7 @@ class BinaryFunction:
         return min_risk, opt_params, is_unique
 
     def __str__(self):
-        return str(self.parameters)
+        return "[" + ','.join([str(p) for p in self.parameters])+"]"
 
 
 

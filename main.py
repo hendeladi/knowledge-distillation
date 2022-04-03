@@ -1,12 +1,15 @@
-from simulations.st_simulation import Simulation
-from simulations.configs import example_theory_check8
-import logging
-from datetime import datetime
+from simulations.st_simulation import Simulation, Simulation2
+from simulations.configs import CONFIGS
+
 
 if __name__ == '__main__':
-    conf = example_theory_check8
-    sim = Simulation(conf, multi_proc=True, log=True)
+    conf = CONFIGS['example_theory_check1']
+    sim = Simulation2(conf, multi_proc=True, log=False)
     print(sim.sim_config)
     sim.run()
-    #plt.show()
- 
+
+    conf = CONFIGS['example_theory_check2']
+    sim = Simulation2(conf, multi_proc=True, log=False)
+    print(sim.sim_config)
+    sim.run()
+

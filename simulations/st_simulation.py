@@ -2,9 +2,6 @@ import numpy as np
 import logging
 import random
 from matplotlib import pyplot as plt
-from simulations.configs import example2_new_config, example_10params_gt, example_2params_student,\
-    example_student3params_gt10params, example_theory_check3
-import simulations
 from src.function_models import BinaryFunction
 from simulations.utils import save_fig, save_data
 import os
@@ -215,6 +212,164 @@ class Simulation:
                 if self.sim_config.dest_dir is not None:
                     Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
                     save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "params.png")
+
+
+class Simulation2:
+    def __init__(self, sim_config, multi_proc=False, log=False):
+        self.sim_config = sim_config
+        self.multi_proc = multi_proc
+        self.log = log
+        self.baseline_metrics = {
+            "risk": [],
+            "risk_std": [],
+            "emp_risk": [],
+            "parameters": []
+        }
+
+        self.kd_metrics = {i: {
+            "risk": [],
+            "risk_std": [],
+            "emp_risk": [],
+            "parameters": []
+        } for i in range(len(self.sim_config.teacher_func))}
+
+    def run_repeat(self, repeatitions, return_results=None):
+        if self.log:
+            logging.basicConfig(filename="Log_" + datetime.now().strftime("%d_%m_%Y__%H_%M_%S")+".txt",
+                                filemode='a',
+                                format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                                datefmt='%H:%M:%S',
+                                level=logging.DEBUG)
+
+        kd_metrics = {i: {
+            "risk": [],
+            "risk_std": [],
+            "emp_risk": [],
+            "parameters": []
+        } for i in range(len(self.sim_config.teacher_func))}
+
+        for n in range(2, self.sim_config.num_train_examples):
+            R_kd_avg = {i: [] for i in range(len(self.sim_config.teacher_func))}
+            Remp_kd_avg = {i: [] for i in range(len(self.sim_config.teacher_func))}
+            b_kd_avg = {i: [] for i in range(len(self.sim_config.teacher_func))}
+            print(n)
+
+            if n % 2 == 0 and self.log:
+                logging.info('on example {}'.format(n))
+            for epoch in range(repeatitions):
+                student_set = np.sort(np.array([random.random() for i in range(n)]))
+
+
+                ###########  distillation ########################################
+                for i in range(len(self.sim_config.teacher_func)):
+                    loss_kd, b_kd = self.sim_config.teacher_func[i].get_empirical_risk(self.sim_config.teacher_func[i],
+                                                                                    student_set,
+                                                                                    self.sim_config.student_num_params)
+                    student_kd = BinaryFunction(b_kd)
+                    R_kd = self.sim_config.gt_func.get_risk(self.sim_config.gt_func, student_kd)
+                    R_kd_avg[i].append(R_kd)
+                    Remp_kd_avg[i].append(loss_kd)
+                    b_kd_avg[i].append(b_kd)
+            for i in range(len(self.sim_config.teacher_func)):
+                kd_metrics[i]["risk"].append(np.mean(R_kd_avg[i]))
+                kd_metrics[i]["risk_std"].append(np.std(R_kd_avg[i]))
+                kd_metrics[i]["emp_risk"].append(np.mean(Remp_kd_avg[i]))
+                kd_metrics[i]["parameters"].append(np.mean(b_kd_avg[i], axis=0))
+        if self.multi_proc:
+            return_results.append([kd_metrics])
+        else:
+            return kd_metrics
+
+    def run(self):
+        start = time.time()
+        if self.multi_proc:
+            manager = multiprocessing.Manager()
+            return_results = manager.list()
+            num_processes = NUM_PROCESSES
+            repeats_per_core = self.sim_config.num_repeat//num_processes
+
+            jobs = []
+            for i in range(num_processes):
+                p = multiprocessing.Process(target=self.run_repeat, args=(repeats_per_core, return_results))
+                jobs.append(p)
+                p.start()
+
+            for proc in jobs:
+                proc.join()
+
+            for t in range(len(self.sim_config.teacher_func)):
+                for metric in ["risk", "risk_std", "emp_risk", "parameters"]:
+                    kd_metric = []
+                    for j in range(num_processes):
+                        proc_kd_metric = return_results[j][0]
+                        kd_metric.append(proc_kd_metric[t][metric])
+                    self.kd_metrics[t][metric] = np.mean(kd_metric, axis=0)
+        else:
+            self.kd_metrics = self.run_repeat(self.sim_config.num_repeat)
+
+        end = time.time()
+        sim_time = end-start
+        print(f"sim time is {sim_time//60} minutes and {sim_time%60} seconds")
+        self.generate_plots()
+
+    def generate_plots(self):
+        x_axis = np.array(range(2, self.sim_config.num_train_examples))
+        if "risk" in self.sim_config.plots:
+            fig = plt.figure()
+            for t in range(len(self.sim_config.teacher_func)):
+                plt.plot(x_axis, self.kd_metrics[t]["risk"])
+            plt.title("Student test error as function of number of student training examples")
+            plt.legend(["student {}".format(i) for i in range(len(self.sim_config.teacher_func))])
+            plt.xlabel("number of training examples")
+            plt.ylabel("error")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "risk.png")
+                for t in range(len(self.sim_config.teacher_func)):
+                    save_data(self.kd_metrics[t]["risk"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "R_kd_{}".format(t))
+
+
+        if "emp_risk" in self.sim_config.plots:
+            fig = plt.figure()
+            for t in range(len(self.sim_config.teacher_func)):
+                plt.plot(x_axis, self.kd_metrics[t]["emp_risk"])
+            plt.title("Student empirical error as function of number of student training examples")
+            plt.legend(["student {}".format(i) for i in range(len(self.sim_config.teacher_func))])
+            plt.xlabel("number of training examples")
+            plt.ylabel("error")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "emp_risk.png")
+                #save_data(self.baseline_metrics["emp_risk"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "Remp_baseline_arr")
+                #save_data(self.kd_metrics["emp_risk"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "Remp_kd_arr")
+
+
+        if "risk_std" in self.sim_config.plots:
+            fig = plt.figure()
+            for t in range(len(self.sim_config.teacher_func)):
+                plt.plot(x_axis, self.kd_metrics[t]["risk_std"])
+            plt.title("Student std function of number of student training examples")
+            plt.legend(["student {}".format(i) for i in range(len(self.sim_config.teacher_func))])
+            plt.xlabel("number of training examples")
+            plt.ylabel("std")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "risk_std.png")
+                #save_data(self.baseline_metrics["risk_std"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "R_baseline_std_arr")
+                #save_data(self.kd_metrics["risk_std"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "R_kd_std_arr")
+
+        if "parameters" in self.sim_config.plots:
+            fig = plt.figure()
+            for t in range(len(self.sim_config.teacher_func)):
+                plt.plot(x_axis, self.kd_metrics[t]["parameters"])
+            plt.title(f"expected parameter value as function of number of training examples")
+            plt.legend(["student {}".format(i) for i in range(len(self.sim_config.teacher_func))])
+            plt.xlabel("number of training examples")
+            plt.ylabel("parameter value")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "params.png")
+
 
 
 

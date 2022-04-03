@@ -1,12 +1,20 @@
 import numpy as np
 from src.statistics import multinomial_coeff
 import matplotlib.pyplot as plt
-
+import os
 
 n_range = range(2,500)
+dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\example_theory_check2'
+plt.figure()
+a = []
+for i in range(3):
+    a.append(np.load(os.path.join(dir,f'R_kd_{i}.npy')))
 
-
+plt.plot(a[1]/a[0])
+plt.plot(a[2]/a[0])
+plt.show()
 ##############################
+'''
 mutli_arr = []
 
 for n in n_range:
@@ -50,7 +58,7 @@ plt.ylabel("ratio")
 plt.show()
 ##############################
 
-'''delta = 0.99
+delta = 0.99
 exp_arr = [delta**n for n in n_range]
 
 
