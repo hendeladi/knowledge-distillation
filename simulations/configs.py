@@ -1,9 +1,10 @@
 from src.optimizers import optimizer_1b_subopt, optimizer_1b_sticky,optimizer_1b_min
+from src.sets import Region
 from src.function_models import BinaryFunction, func_1b, func_2b
 import numpy as np
 
-AllPlots = ["risk", "risk_std", "emp_risk", "gen_error", "parameters"]
-DefaultPlots = ["risk", "risk_std", "parameters"]
+AllPlots = ["risk", "risk_std", "emp_risk", "gen_error", "parameters","delta_far_prob", "delta_far_prob_term1",  "delta_far_prob_term2"]
+DefaultPlots = ["risk", "risk_std", "parameters", "delta_far_prob", "delta_far_prob_term1",  "delta_far_prob_term2"]
 
 
 class ConfigDict:
@@ -25,7 +26,9 @@ class SimConfig:
                  num_repeat=1,
                  tag="Default",
                  plots=DefaultPlots,
-                 dest_dir=None
+                 dest_dir=None,
+                 delta=None,
+                 Aopt=None
                  ):
         self.tag = tag
         self.num_train_examples = num_train_examples
@@ -35,6 +38,8 @@ class SimConfig:
         self.student_num_params = student_num_params
         self.plots = plots
         self.dest_dir = dest_dir
+        self.delta = delta
+        self.Aopt = Aopt
 
     def load_config(self, sim_config):
         self.tag = sim_config.tag
@@ -44,6 +49,8 @@ class SimConfig:
         self.teacher_func = sim_config.teacher_func
         self.student_num_params = sim_config.student_num_params
         self.dest_dir = sim_config.dest_dir
+        self.delta = sim_config.delta
+        self.Aopt = sim_config.Aopt
 
     def __str__(self):
         lst = []
@@ -238,11 +245,13 @@ example_theory_check2 = SimConfig(
 )
 
 ############## Theory check3 #############################################
-g1 = BinaryFunction([0.05, 0.2, 0.7])
-g2 = BinaryFunction([0.25, 0.4, 0.7])
+gt = BinaryFunction([0.45, 0.55, 0.7])
+g1 = BinaryFunction([0.7])
+g2 = BinaryFunction([0.45, 0.55, 0.7])
+g3 = BinaryFunction([0.25, 0.35, 0.7])
 example_theory_check3 = SimConfig(
-    gt_func=g2,
-    teacher_func=g1,
+    gt_func=gt,
+    teacher_func=[g1, g2, g3],
     student_num_params=1,
     num_train_examples=85,
     num_repeat=20000,
@@ -346,121 +355,38 @@ test = SimConfig(
     dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
 )
 
-CONFIGS = ConfigDict([example_theory_check1, example_theory_check2, test])
-'''
-############## Example 2 v2 #############################################
-
-def example2v2_gt(x):
-    b1 = 0.25
-    b2 = 0.7
-    out = [0 if i < b1 else 1 if i < b2 else 0 for i in x]
-    return np.array(out)
 
 
-def example2v2_risk(b):
-    b1 = 0.25
-    b2 = 0.7
-    if b <= b1:
-        loss = b1-b + 1-b2
-    elif b <= b2:
-        loss = b-b1 + 1-b2
-    else:
-        loss = (b2-b1) + 1-b
-    return loss
+############## example1 #############################################
+gt = BinaryFunction([0.2, 0.5, 0.65, 0.9])
+teacher = BinaryFunction([0.2, 0.9])
 
-
-def example2v2_teacher(x):
-    b1 = 0.25
-    out = [0 if i < b1 else 1 for i in x]
-    return np.array(out)
-
-
-example2v2_config = SimConfig(
-    gt_func=example2v2_gt,
-    gt_risk=example2v2_risk,
-    student_func=func_1b,
-    student_optimizer=optimizer_1b_subopt,
-    teacher_func=example2v2_teacher,
-    num_train_examples=130,
+example1 = SimConfig(
+    gt_func=gt,
+    teacher_func=teacher,
+    student_num_params=1,
+    num_train_examples=60,
     num_repeat=20000,
-    tag="Example 2 v2"
+    delta=0.1,
+    Aopt={"gt": Region([(0, 0.5)]), "kd": Region([(0, 0.9)])},
+    tag="example1",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
 )
+CONFIGS = ConfigDict([example_theory_check1, example_theory_check2,
+                      example_theory_check3, test, example1])
 
 
 
-############## Example 3 #############################################
-def example3_gt(x):
-    b1 = 0.25
-    b2 = 0.8
-    out = [0 if i < b1 else 1 if i < b2 else 0 for i in x]
-    return np.array(out)
 
 
-def example3_risk(b):
-    if b <= 0.25:
-        loss = 0.25-b + 0.2
-    elif b <= 0.8:
-        loss = b-0.25 + 0.2
-    else:
-        loss = 0.55 + 1-b
-    return loss
 
 
-def example3_teacher(x):
-    b1 = 0.1
-    b2 = 0.15
-    b3 = 0.25
-    b4 = 0.8
-    out = [0 if i < b1 else 1 if i < b2 else 0 if i < b3 else 1 if i < b4 else 0 for i in x]
-    return out
 
 
-example3_config = SimConfig(
-    gt_func=example3_gt,
-    gt_risk=example3_risk,
-    student_func=func_1b,
-    student_optimizer=optimizer_1b_subopt,
-    teacher_func=example3_teacher,
-    num_train_examples=120,
-    num_repeat=20000,
-    tag="Example 3"
-)
 
 
-############## Example 4 #############################################
-def example4_gt(x):
-    b1 = 0.1
-    b2 = 0.3
-    out = [0 if i <= b1 else 1 if i <= b2 else 0 for i in x]
-    return out
-
-def example4_risk(b):
-    if b <= 0.1:
-        loss = 0.1-b + 0.7
-    elif b <= 0.3:
-        loss = b-0.1 + 0.7
-    else:
-        loss = 0.1 + 1-b
-    return loss
 
 
-def example4_teacher(x):
-    b1 = 0.1
-    b2 = 0.4
-    out = [0 if i < b1 else 1 if i < b2 else 0 for i in x]
-    return out
 
 
-example4_config = SimConfig(
-    gt_func=example4_gt,
-    gt_risk=example4_risk,
-    student_func=func_1b,
-    student_optimizer=optimizer_1b_subopt,
-    teacher_func=example4_teacher,
-    num_train_examples=120,
-    num_repeat=20000,
-    tag="Example 4"
-)
 
-
-'''

@@ -3,6 +3,24 @@ from matplotlib import pyplot as plt
 import math
 
 
+def gen_perm(n, k):
+    if k == 1:
+        return [[n]]
+    if n == 0:
+        return [[0]*k]
+    return [g2 for x in range(n+1) for g2 in [u+[n-x] for u in gen_perm(x, k-1)]]
+
+def discrete_entropy(pr):
+    if not math.isclose(sum(pr), 1,abs_tol=0.0000001):
+        raise Exception("sum of probabilities must be 1")
+    H = 0
+    for p in pr:
+        if p > 0:
+            H -= p*math.log2(p)
+    return H
+
+
+
 def eval_entropy(density_fun, x_range, k_range):
     """
     Estimates the differential entropy of density_fun using values in x_range
@@ -35,11 +53,56 @@ def multinomial_coeff(k, n_lst):
     :param n_lst: list of integers.
     :return: float multinomial coefficient.
     """
+    assert sum(n_lst) == k
     num = math.factorial(k)
     denom = 1
     for i in n_lst:
         denom *= math.factorial(i)
     return num / denom
+
+
+def multinom_most_chosen_class_prob(probabilites, N, class_idx=0):
+    if not math.isclose(sum(probabilites), 1,abs_tol=0.0000001):
+        raise Exception("sum of probabilities must be 1")
+
+    num_classes = len(probabilites)
+    permutations = get_class_permutations(num_classes, N)
+    S = 0
+    for perm in permutations:
+        M = 1
+        coeff = multinomial_coeff(N, perm)
+        for m, p in zip(perm, probabilites):
+            M *= p**m
+        S += coeff*M
+    return S
+
+
+def get_class_permutations(num_classes,N):
+
+    def foo(idx, upper, max_val, max_idx):
+        if idx == max_idx:
+            if upper <= max_val:
+                return [[upper]]
+            else:
+                return None
+
+        concat_lst = []
+        for i in range(0, min(max_val,upper)+1):
+            lst = foo(idx+1, upper-i, max_val, max_idx)
+            if lst is None:
+                continue
+            concat_lst += [[i] + inner_lst for inner_lst in lst]
+        return concat_lst
+
+    concat_lst = []
+    min_val = math.ceil(N / num_classes)
+    for k in range(min_val, N + 1):
+        lst = foo(2, upper=N - k, max_val=k, max_idx=num_classes)
+        concat_lst += [[k] + inner_lst for inner_lst in lst]
+    return concat_lst
+
+
+
 
 
 

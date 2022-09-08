@@ -18,18 +18,33 @@ class Simulation:
         self.sim_config = sim_config
         self.multi_proc = multi_proc
         self.log = log
-        self.baseline_metrics = {
+        self.delta = sim_config.delta
+        self.Aopt = sim_config.Aopt
+        self.baseline_metrics = self.create_metric_dict()
+        self.kd_metrics = self.create_metric_dict()
+        [self.opt_risk, self.opt_params, is_unique] = sim_config.gt_func.get_approx_hypoth(sim_config.student_num_params)
+        self.opt_hypoth = BinaryFunction(self.opt_params)
+        print('')
+        self.metrics = ["risk", "risk_std", "emp_risk", "parameters"]
+        if self.delta is not None:
+            self.metrics += ["delta_far_prob"]
+            if self.Aopt is not None:
+                self.metrics += ["delta_far_prob_term1", "delta_far_prob_term2"]
+
+
+    @staticmethod
+    def create_metric_dict():
+        metric_dict = {
             "risk": [],
             "risk_std": [],
             "emp_risk": [],
-            "parameters": []
+            "parameters": [],
+            "delta_far_prob": [],
+            "delta_far_prob_term1": [],
+            "delta_far_prob_term2": []
         }
-        self.kd_metrics = {
-            "risk": [],
-            "risk_std": [],
-            "emp_risk": [],
-            "parameters": []
-        }
+        return metric_dict
+
 
     def run_repeat(self, repeatitions, return_results=None):
         if self.log:
@@ -38,27 +53,13 @@ class Simulation:
                                 format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                                 datefmt='%H:%M:%S',
                                 level=logging.DEBUG)
-        baseline_metrics = {
-            "risk": [],
-            "risk_std": [],
-            "emp_risk": [],
-            "parameters": []
-        }
+        baseline_metrics = self.create_metric_dict()
 
-        kd_metrics = {
-            "risk": [],
-            "risk_std": [],
-            "emp_risk": [],
-            "parameters": []
-        }
+        kd_metrics = self.create_metric_dict()
 
         for n in range(2, self.sim_config.num_train_examples):
-            R_baseline_avg = []
-            R_kd_avg = []
-            Remp_baseline_avg = []
-            Remp_kd_avg = []
-            b_kd_avg = []
-            b_baseline_avg = []
+            baseline_metrics_n = self.create_metric_dict()
+            kd_metrics_n = self.create_metric_dict()
             print(n)
 
             if n%2 == 0 and self.log:
@@ -81,26 +82,51 @@ class Simulation:
                 student_kd = BinaryFunction(b_kd)
 
                 ###########  losses ########################################
-                R_baseline = self.sim_config.gt_func.get_risk(self.sim_config.gt_func, student_baseline)
-                R_kd = self.sim_config.gt_func.get_risk(self.sim_config.gt_func, student_kd)
-                R_baseline_avg.append(R_baseline)
-                R_kd_avg.append(R_kd)
+                R_baseline = BinaryFunction.get_risk(self.sim_config.gt_func, student_baseline)
+                R_kd = BinaryFunction.get_risk(self.sim_config.gt_func, student_kd)
+
+                baseline_metrics_n['risk'].append(R_baseline)#R_baseline_avg.append(R_baseline)
+                kd_metrics_n['risk'].append(R_kd)#R_kd_avg.append(R_kd)
 
                 # Remp_kd = np.mean(np.abs(sim.student_func(b_kd, student_set) - gt_labels))
-                Remp_baseline_avg.append(loss_baseline)
-                Remp_kd_avg.append(loss_kd)
-                b_baseline_avg.append(b_baseline)
-                b_kd_avg.append(b_kd)
+                baseline_metrics_n['emp_risk'].append(loss_baseline)#Remp_baseline_avg.append(loss_baseline)
+                kd_metrics_n['emp_risk'].append(loss_kd)#Remp_kd_avg.append(loss_kd)
+                baseline_metrics_n['parameters'].append(b_baseline)#b_baseline_avg.append(b_baseline)
+                kd_metrics_n['parameters'].append(b_kd)#b_kd_avg.append(b_kd)
+                if self.delta is not None:
+                    R_fopt_baseline = BinaryFunction.get_risk(self.opt_hypoth, student_baseline)
+                    R_fopt_kd = BinaryFunction.get_risk(self.opt_hypoth, student_kd)
+                    baseline_metrics_n['delta_far_prob'].append(1 if R_fopt_baseline > self.delta else 0)
+                    kd_metrics_n['delta_far_prob'].append(1 if R_fopt_kd > self.delta else 0)
+                    if self.Aopt is not None:
+                        baseline_metrics_n['delta_far_prob_term1'].append(1 if (self.Aopt["gt"].contain(b_baseline) and R_fopt_baseline > self.delta) else 0)
+                        baseline_metrics_n['delta_far_prob_term2'].append(1 if (not self.Aopt["gt"].contain(b_baseline)) else 0)
+                        kd_metrics_n['delta_far_prob_term1'].append(1 if (self.Aopt["kd"].contain(b_kd) and R_fopt_kd > self.delta) else 0)
+                        kd_metrics_n['delta_far_prob_term2'].append(1 if (not self.Aopt["kd"].contain(b_kd)) else 0)
+
 
             ########### average over epochs ########################################
-            baseline_metrics["risk"].append(np.mean(R_baseline_avg))
-            baseline_metrics["risk_std"].append(np.std(R_baseline_avg))
-            baseline_metrics["emp_risk"].append(np.mean(Remp_baseline_avg))
-            baseline_metrics["parameters"].append(np.mean(b_baseline_avg, axis=0))
-            kd_metrics["risk"].append(np.mean(R_kd_avg))
-            kd_metrics["risk_std"].append(np.std(R_kd_avg))
-            kd_metrics["emp_risk"].append(np.mean(Remp_kd_avg))
-            kd_metrics["parameters"].append(np.mean(b_kd_avg, axis=0))
+            baseline_metrics["risk"].append(np.mean(baseline_metrics_n['risk']))#baseline_metrics["risk"].append(np.mean(R_baseline_avg))
+            kd_metrics["risk"].append(np.mean(kd_metrics_n['risk']))  # kd_metrics["risk"].append(np.mean(R_kd_avg))
+
+            baseline_metrics["risk_std"].append(np.std(baseline_metrics_n['risk']))#baseline_metrics["risk_std"].append(np.std(R_baseline_avg))
+            kd_metrics["risk_std"].append(np.std(kd_metrics_n['risk']))  # kd_metrics["risk_std"].append(np.std(R_kd_avg))
+
+            baseline_metrics["emp_risk"].append(np.mean(baseline_metrics_n['emp_risk']))#baseline_metrics["emp_risk"].append(np.mean(Remp_baseline_avg))
+            kd_metrics["emp_risk"].append(np.mean(kd_metrics_n['emp_risk']))  # kd_metrics["emp_risk"].append(np.mean(Remp_kd_avg))
+
+            baseline_metrics["parameters"].append(np.mean(baseline_metrics_n['parameters'], axis=0))#baseline_metrics["parameters"].append(np.mean(b_baseline_avg, axis=0))
+            kd_metrics["parameters"].append(np.mean(kd_metrics_n['parameters'], axis=0))  # kd_metrics["parameters"].append(np.mean(b_kd_avg, axis=0))
+
+            if self.delta is not None:
+                baseline_metrics["delta_far_prob"].append(np.mean(baseline_metrics_n['delta_far_prob']))
+                kd_metrics["delta_far_prob"].append(np.mean(kd_metrics_n['delta_far_prob']))
+                if self. Aopt is not None:
+                    baseline_metrics["delta_far_prob_term1"].append(np.mean(baseline_metrics_n['delta_far_prob_term1']))
+                    kd_metrics["delta_far_prob_term1"].append(np.mean(kd_metrics_n['delta_far_prob_term1']))
+                    baseline_metrics["delta_far_prob_term2"].append(np.mean(baseline_metrics_n['delta_far_prob_term2']))
+                    kd_metrics["delta_far_prob_term2"].append(np.mean(kd_metrics_n['delta_far_prob_term2']))
+
         if self.multi_proc:
             return_results.append([kd_metrics, baseline_metrics])
         else:
@@ -119,11 +145,10 @@ class Simulation:
                 p = multiprocessing.Process(target=self.run_repeat, args=(repeats_per_core, return_results))
                 jobs.append(p)
                 p.start()
-
             for proc in jobs:
                 proc.join()
 
-            for metric in ["risk", "risk_std", "emp_risk", "parameters"]:
+            for metric in self.metrics:
                 baseline_metric = []
                 kd_metric = []
                 for i in range(num_processes):
@@ -150,10 +175,10 @@ class Simulation:
         if "risk" in self.sim_config.plots:
             fig = plt.figure()
             plt.plot(x_axis, self.baseline_metrics["risk"], 'b', x_axis, self.kd_metrics["risk"], 'r')
-            plt.title("Student test error as function of number of student training examples")
-            plt.legend(["baseline", "KD"])
+            plt.title("Student risk as function of number of training examples")
+            plt.legend(["baseline student", "KD student"])
             plt.xlabel("number of training examples")
-            plt.ylabel("error")
+            plt.ylabel("risk")
             if self.sim_config.dest_dir is not None:
                 Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
                 save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "risk.png")
@@ -212,6 +237,68 @@ class Simulation:
                 if self.sim_config.dest_dir is not None:
                     Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
                     save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "params.png")
+
+        if "delta_far_prob" in self.sim_config.plots and self.delta is not None:
+            fig = plt.figure()
+            plt.plot(x_axis, self.baseline_metrics["delta_far_prob"], 'b', x_axis, self.kd_metrics["delta_far_prob"], 'r')
+            plt.title(f"Student risk >{self.delta} probability as function of number of training examples")
+            plt.legend(["baseline student", "KD student"])
+            plt.xlabel("number of training examples")
+            plt.ylabel("probability")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob.png")
+                save_data(self.baseline_metrics["delta_far_prob"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_baseline_arr")
+                save_data(self.kd_metrics["delta_far_prob"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_kd_arr")
+
+        if "delta_far_prob_term1" in self.sim_config.plots and self.Aopt is not None:
+            fig = plt.figure()
+            plt.plot(x_axis, self.baseline_metrics["delta_far_prob_term1"], 'b', x_axis, self.kd_metrics["delta_far_prob_term1"], 'r')
+            plt.title(f"Student risk >{self.delta} term1 probability as function of number of training examples")
+            plt.legend(["baseline student", "KD student"])
+            plt.xlabel("number of training examples")
+            plt.ylabel("probability")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_term1.png")
+                save_data(self.baseline_metrics["delta_far_prob_term1"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_term1_baseline_arr")
+                save_data(self.kd_metrics["delta_far_prob_term1"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_term1_kd_arr")
+
+        if "delta_far_prob_term2" in self.sim_config.plots and self.Aopt is not None:
+            fig = plt.figure()
+            plt.plot(x_axis, self.baseline_metrics["delta_far_prob_term2"], 'b', x_axis, self.kd_metrics["delta_far_prob_term2"], 'r')
+            plt.title(f"Student risk >{self.delta} term2 probability as function of number of training examples")
+            plt.legend(["baseline student", "KD student"])
+            plt.xlabel("number of training examples")
+            plt.ylabel("probability")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_term2.png")
+                save_data(self.baseline_metrics["delta_far_prob_term2"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_term2_baseline_arr")
+                save_data(self.kd_metrics["delta_far_prob_term2"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_term2_kd_arr")
+
+        if "delta_far_prob_term1" in self.sim_config.plots and "delta_far_prob_term2" in self.sim_config.plots and self.Aopt is not None:
+            fig = plt.figure()
+            plt.plot(x_axis, self.baseline_metrics["delta_far_prob"], 'b', x_axis, self.baseline_metrics["delta_far_prob_term1"], 'r',x_axis, self.baseline_metrics["delta_far_prob_term2"], 'g')
+            plt.title(f"Baseline student delta = {self.delta} probabilities as function of number of training examples")
+            plt.legend(["delta_far_prob", "term1", "term2"])
+            plt.xlabel("number of training examples")
+            plt.ylabel("probability")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "baseline_delta_probs.png")
+
+            fig = plt.figure()
+            plt.plot(x_axis, self.kd_metrics["delta_far_prob"], 'b', x_axis,
+                     self.kd_metrics["delta_far_prob_term1"], 'r', x_axis,
+                     self.kd_metrics["delta_far_prob_term2"], 'g')
+            plt.title(f"KD student delta = {self.delta} probabilities as function of number of training examples")
+            plt.legend(["delta_far_prob", "term1", "term2"])
+            plt.xlabel("number of training examples")
+            plt.ylabel("probability")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "kd_delta_probs.png")
 
 
 class Simulation2:

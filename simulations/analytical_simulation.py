@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from src.statistics import expected_risk_kd, expected_risk_baseline
-
+from src.sets import Region
 
 if __name__ == "__main":
     k_range = list(range(2, 102, 2))
@@ -111,4 +111,6 @@ if __name__ == "__main":
     plt.ylabel("entropy")
     plt.show()
     '''
+
+
 

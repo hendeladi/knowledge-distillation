@@ -3,13 +3,9 @@ from simulations.configs import CONFIGS
 
 
 if __name__ == '__main__':
-    conf = CONFIGS['example_theory_check1']
-    sim = Simulation2(conf, multi_proc=True, log=False)
+    conf = CONFIGS['example1']
+    sim = Simulation(conf, multi_proc=True, log=True)
     print(sim.sim_config)
     sim.run()
 
-    conf = CONFIGS['example_theory_check2']
-    sim = Simulation2(conf, multi_proc=True, log=False)
-    print(sim.sim_config)
-    sim.run()
 
