@@ -372,8 +372,23 @@ example1 = SimConfig(
     tag="example1",
     dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
 )
+############## example2 #############################################
+gt = BinaryFunction([0.2, 0.5, 0.65, 0.9])
+teacher = BinaryFunction([0.2])
+
+example2 = SimConfig(
+    gt_func=gt,
+    teacher_func=teacher,
+    student_num_params=1,
+    num_train_examples=100,
+    num_repeat=30000,
+    delta=0.1,
+    Aopt={"gt": Region([(0, 0.5)]), "kd": Region([(0, 1)])},
+    tag="example2",
+    dest_dir=r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results'
+)
 CONFIGS = ConfigDict([example_theory_check1, example_theory_check2,
-                      example_theory_check3, test, example1])
+                      example_theory_check3, test, example1, example2])
 
 
 

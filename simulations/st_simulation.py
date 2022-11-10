@@ -45,7 +45,6 @@ class Simulation:
         }
         return metric_dict
 
-
     def run_repeat(self, repeatitions, return_results=None):
         if self.log:
             logging.basicConfig(filename="Log_" + datetime.now().strftime("%d_%m_%Y__%H_%M_%S")+".txt",
@@ -54,30 +53,27 @@ class Simulation:
                                 datefmt='%H:%M:%S',
                                 level=logging.DEBUG)
         baseline_metrics = self.create_metric_dict()
-
         kd_metrics = self.create_metric_dict()
 
-        for n in range(2, self.sim_config.num_train_examples):
+        for n in range(85, self.sim_config.num_train_examples):
             baseline_metrics_n = self.create_metric_dict()
             kd_metrics_n = self.create_metric_dict()
             print(n)
 
-            if n%2 == 0 and self.log:
+            if n % 2 == 0 and self.log:
                 logging.info('on example {}'.format(n))
             for epoch in range(repeatitions):
                 student_set = np.sort(np.array([random.random() for i in range(n)]))
 
                 ###########  baseline ########################################
                 # gt_labels = sim.gt_func.get_labels(student_set)
-                loss_baseline, b_baseline = self.sim_config.gt_func.get_empirical_risk(self.sim_config.gt_func,
-                                                                                       student_set,
+                loss_baseline, b_baseline = self.sim_config.gt_func.get_empirical_risk(self.sim_config.gt_func, student_set,
                                                                                        self.sim_config.student_num_params)
                 student_baseline = BinaryFunction(b_baseline)
 
                 ###########  distillation ########################################
                 # teacher_labels = self.sim_config.teacher_func.get_labels(student_set)
-                loss_kd, b_kd = self.sim_config.teacher_func.get_empirical_risk(self.sim_config.teacher_func,
-                                                                                student_set,
+                loss_kd, b_kd = self.sim_config.teacher_func.get_empirical_risk(self.sim_config.teacher_func,  student_set,
                                                                                 self.sim_config.student_num_params)
                 student_kd = BinaryFunction(b_kd)
 
@@ -85,14 +81,13 @@ class Simulation:
                 R_baseline = BinaryFunction.get_risk(self.sim_config.gt_func, student_baseline)
                 R_kd = BinaryFunction.get_risk(self.sim_config.gt_func, student_kd)
 
-                baseline_metrics_n['risk'].append(R_baseline)#R_baseline_avg.append(R_baseline)
-                kd_metrics_n['risk'].append(R_kd)#R_kd_avg.append(R_kd)
+                baseline_metrics_n['risk'].append(R_baseline)
+                kd_metrics_n['risk'].append(R_kd)#
 
-                # Remp_kd = np.mean(np.abs(sim.student_func(b_kd, student_set) - gt_labels))
-                baseline_metrics_n['emp_risk'].append(loss_baseline)#Remp_baseline_avg.append(loss_baseline)
-                kd_metrics_n['emp_risk'].append(loss_kd)#Remp_kd_avg.append(loss_kd)
-                baseline_metrics_n['parameters'].append(b_baseline)#b_baseline_avg.append(b_baseline)
-                kd_metrics_n['parameters'].append(b_kd)#b_kd_avg.append(b_kd)
+                baseline_metrics_n['emp_risk'].append(loss_baseline)
+                kd_metrics_n['emp_risk'].append(loss_kd)
+                baseline_metrics_n['parameters'].append(b_baseline)
+                kd_metrics_n['parameters'].append(b_kd)
                 if self.delta is not None:
                     R_fopt_baseline = BinaryFunction.get_risk(self.opt_hypoth, student_baseline)
                     R_fopt_kd = BinaryFunction.get_risk(self.opt_hypoth, student_kd)
@@ -106,17 +101,17 @@ class Simulation:
 
 
             ########### average over epochs ########################################
-            baseline_metrics["risk"].append(np.mean(baseline_metrics_n['risk']))#baseline_metrics["risk"].append(np.mean(R_baseline_avg))
-            kd_metrics["risk"].append(np.mean(kd_metrics_n['risk']))  # kd_metrics["risk"].append(np.mean(R_kd_avg))
+            baseline_metrics["risk"].append(np.mean(baseline_metrics_n['risk']))
+            kd_metrics["risk"].append(np.mean(kd_metrics_n['risk']))  #
 
-            baseline_metrics["risk_std"].append(np.std(baseline_metrics_n['risk']))#baseline_metrics["risk_std"].append(np.std(R_baseline_avg))
-            kd_metrics["risk_std"].append(np.std(kd_metrics_n['risk']))  # kd_metrics["risk_std"].append(np.std(R_kd_avg))
+            baseline_metrics["risk_std"].append(np.std(baseline_metrics_n['risk']))
+            kd_metrics["risk_std"].append(np.std(kd_metrics_n['risk']))
 
-            baseline_metrics["emp_risk"].append(np.mean(baseline_metrics_n['emp_risk']))#baseline_metrics["emp_risk"].append(np.mean(Remp_baseline_avg))
-            kd_metrics["emp_risk"].append(np.mean(kd_metrics_n['emp_risk']))  # kd_metrics["emp_risk"].append(np.mean(Remp_kd_avg))
+            baseline_metrics["emp_risk"].append(np.mean(baseline_metrics_n['emp_risk']))
+            kd_metrics["emp_risk"].append(np.mean(kd_metrics_n['emp_risk']))
 
-            baseline_metrics["parameters"].append(np.mean(baseline_metrics_n['parameters'], axis=0))#baseline_metrics["parameters"].append(np.mean(b_baseline_avg, axis=0))
-            kd_metrics["parameters"].append(np.mean(kd_metrics_n['parameters'], axis=0))  # kd_metrics["parameters"].append(np.mean(b_kd_avg, axis=0))
+            baseline_metrics["parameters"].append(np.mean(baseline_metrics_n['parameters'], axis=0))
+            kd_metrics["parameters"].append(np.mean(kd_metrics_n['parameters'], axis=0))
 
             if self.delta is not None:
                 baseline_metrics["delta_far_prob"].append(np.mean(baseline_metrics_n['delta_far_prob']))
