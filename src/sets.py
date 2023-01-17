@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from numpy.random import uniform
 import copy
 import itertools
@@ -233,13 +234,13 @@ class SecondTerm:
         separated = [r for r in separated if r.regions != [()]]
         return separated
 
-    def probability(self, n):
+    def probability(self, n, ell=0):
         k = len(self.D)
         m1 = len(self.D_separated)
         m2 = len(self.Dp_separated)
         m = m1 + m2 + 1 if self.Dc_prob > 0 else m1 + m2
 
-        def validate_perm(perm1, perm2, D_separated_dict, Dp_separated_dict, k):
+        def validate_perm(perm1, perm2, D_separated_dict, Dp_separated_dict, k, ell=0):
             m1 = len(perm1)
             m2 = len(perm2)
             D_lst = [0]*k
@@ -247,22 +248,51 @@ class SecondTerm:
             for i in range(k):
                 D_lst[i] = sum([perm1[j] for j in range(m1) if i in D_separated_dict[j]])
                 Dp_lst[i] = sum([perm2[j] for j in range(m2) if i in Dp_separated_dict[j]])
-                if D_lst[i] <= Dp_lst[i]:
+                if D_lst[i] + ell <= Dp_lst[i]:
                     return False
             return zip(D_lst, Dp_lst)
 
         cumsum = 0
         for perm in gen_perm(n, m):
             perm1 = perm[:m1]
-            perm2 = perm[m1:m1+m1]
+            perm2 = perm[m1:m1+m2]
 
-            if validate_perm(perm1, perm2, self.D_separated_dict, self.Dp_separated_dict, k):
+            if validate_perm(perm1, perm2, self.D_separated_dict, self.Dp_separated_dict, k, ell):
                 cumsum += multinomial_coeff(n, perm) * np.prod(np.array(self.D_separated_prob + self.Dp_separated_prob + [self.Dc_prob]) ** np.array(perm))
         return cumsum
 
 
 
 
+
+
+
+
+if __name__ == '__main__':
+    #D = [Region([(0.6, 0.9)]), Region([(0.4, 0.6)])]
+    #Dp = [Region([(0.9, 1)]), Region([(0.3, 0.4)])]
+    D = [Region([(0.6, 0.9)])]
+    Dp = [Region([(0.9, 1)])]
+
+    a = SecondTerm(D, Dp)
+
+    n_range = list(range(2, 302, 10))
+
+    exponent_arr = np.array([])
+    for n in n_range:
+        p = 1 - a.probability(n)
+        exponent = -(1/n)*np.log(p)
+        exponent_arr = np.append(exponent_arr, exponent)
+        print(exponent_arr[-1])
+    plt.figure()
+    plt.plot(n_range, exponent_arr)
+    plt.axhline(y=0.0551, color='r', linestyle='-')
+    plt.ylim([0, 0.32])
+    plt.xlabel('n')
+    plt.ylabel('probability')
+    plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D^f_j \leq $#$D$'#$^f_j$}$_n)$", '$exp(-nD(\Pi^t || Q^t))$'])
+    plt.title('teacher first order exponent')
+    plt.show()
 
 
 

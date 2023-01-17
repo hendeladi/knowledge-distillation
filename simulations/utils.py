@@ -14,3 +14,4 @@ def save_data(arr, dir=os.getcwd(), fname="test"):
         os.mkdir(dir)
     dest = os.path.join(dir, fname)
     np.save(dest, arr)
+

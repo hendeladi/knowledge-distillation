@@ -55,7 +55,7 @@ class Simulation:
         baseline_metrics = self.create_metric_dict()
         kd_metrics = self.create_metric_dict()
 
-        for n in range(85, self.sim_config.num_train_examples):
+        for n in self.sim_config.num_train_examples:
             baseline_metrics_n = self.create_metric_dict()
             kd_metrics_n = self.create_metric_dict()
             print(n)
@@ -163,9 +163,12 @@ class Simulation:
         self.generate_plots()
 
     def generate_plots(self):
-        x_axis = np.array(range(2, self.sim_config.num_train_examples))
+        x_axis = self.sim_config.num_train_examples
         gen_error_baseline_arr = np.abs(np.array(self.baseline_metrics["risk"]) - np.array(self.baseline_metrics["emp_risk"]))
         gen_error_kd_arr = np.abs(np.array(self.kd_metrics["risk"]) - np.array(self.kd_metrics["emp_risk"]))
+
+        if self.sim_config.dest_dir is not None:
+            save_data(x_axis, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "n_range")
 
         if "risk" in self.sim_config.plots:
             fig = plt.figure()
@@ -330,7 +333,7 @@ class Simulation2:
             "parameters": []
         } for i in range(len(self.sim_config.teacher_func))}
 
-        for n in range(2, self.sim_config.num_train_examples):
+        for n in self.sim_config.num_train_examples:
             R_kd_avg = {i: [] for i in range(len(self.sim_config.teacher_func))}
             Remp_kd_avg = {i: [] for i in range(len(self.sim_config.teacher_func))}
             b_kd_avg = {i: [] for i in range(len(self.sim_config.teacher_func))}
@@ -395,7 +398,7 @@ class Simulation2:
         self.generate_plots()
 
     def generate_plots(self):
-        x_axis = np.array(range(2, self.sim_config.num_train_examples))
+        x_axis = self.sim_config.num_train_examples
         if "risk" in self.sim_config.plots:
             fig = plt.figure()
             for t in range(len(self.sim_config.teacher_func)):

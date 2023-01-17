@@ -58,7 +58,7 @@ def multinomial_coeff(k, n_lst):
     denom = 1
     for i in n_lst:
         denom *= math.factorial(i)
-    return num / denom
+    return num // denom
 
 
 def multinom_most_chosen_class_prob(probabilites, N, class_idx=0):
