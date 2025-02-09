@@ -74,7 +74,7 @@ def teacher_exponent():
     plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D^t_j \leq $#$D$'$^t_j$}$_n)$",
                 r"$-\frac{1}{n-\ell}lnPr(\cap_{j=1}^K ${#$D^t_j + \ell \leq $#$D$'$^t_j$}$_{n-\ell}}$)",
                 '$D_{KL}(\Pi^t || Q^t)$'])
-    plt.title('KD student excess error exponent')
+    plt.title('Upper and lower bounds on excess error exponent')
     dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\teacher_exponent'
     save_fig(fig, dest_dir, "teacher_exponent.png")
     save_data(exponent_arr, dir=dest_dir, fname="exponent_arr")
@@ -82,121 +82,86 @@ def teacher_exponent():
     save_data(n_range, dir=dest_dir, fname="n_range")
     plt.show()
 
-
-def gt_exponent():
-    D = [Region([(0.6, 0.9)]), Region([(0.4, 0.6)])]
-    Dp = [Region([(0.9, 1)]), Region([(0.3, 0.4)])]
-    ell = 2
-    a = SecondTerm(D, Dp)
-
-    n_range = list(range(4, 205, 10))
-    exponent_arr = np.array([])
-    for n in n_range:
-        p = 1 - a.probability(n)
-        exponent = -(1/n)*np.log(p)
-        exponent_arr = np.append(exponent_arr, exponent)
-        print(exponent_arr[-1])
-
-    exponent_ell_arr = np.array([])
-    for n in n_range:
-        p = 1 - a.probability(n-ell, ell=ell)
-        exponent_ell = -(1/(n-ell))*np.log(p)
-        exponent_ell_arr = np.append(exponent_ell_arr, exponent_ell)
-        print(exponent_ell_arr[-1])
-    fig = plt.figure()
-    plt.plot(n_range, exponent_arr, n_range, exponent_ell_arr)
-    plt.axhline(y=0.0173, color='r', linestyle='-')
-    plt.ylim([0, 0.32])
-    plt.xlim([n_range[0], n_range[-1]])
-    plt.xlabel('n')
-    plt.ylabel('exponent')
-    plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D^g_j \leq $#$D$'#$^g_j$}$_n)$",
-                r"$-\frac{1}{n-\ell}lnPr(\cap_{j=1}^K ${#$D^g_j + \ell \leq $#$D$'#$^g_j$}$_{n-\ell}}$)",
-                '$D_{KL}(\Pi^g || Q^g)$'])
-    plt.title('Baseline student excess error exponent')
-    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\gt_exponent'
-    save_fig(fig, dest_dir, "gt_exponent.png")
-    save_data(exponent_arr, dir=dest_dir, fname="exponent_arr")
-    save_data(exponent_ell_arr, dir=dest_dir, fname="exponent_ell_arr")
-    save_data(n_range, dir=dest_dir, fname="n_range")
-    plt.show()
-
-def regenereate_gt_exponent(results_path):
+def regenereate_kd_exponent(results_path):
     n_range = np.load(os.path.join(results_path, 'n_range.npy'))
     exponent_arr = np.load(os.path.join(results_path, 'exponent_arr.npy'))
     exponent_ell_arr = np.load(os.path.join(results_path, 'exponent_ell_arr.npy'))
     fig = plt.figure()
     plt.plot(n_range, exponent_arr, n_range, exponent_ell_arr)
-    plt.axhline(y=0.0173, color='r', linestyle='-')
+    plt.axhline(y=0.0551, color='r', linestyle='--')
     plt.ylim([0, 0.5])
-    plt.xlim([n_range[0], n_range[-1]])
+    plt.xlim([n_range[0] - 1, n_range[-1] + 1])
     plt.xlabel('n')
     plt.ylabel('exponent')
-    plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D^g_j \leq $#$D$'#$^g_j$}$_n)$",
-                r"$-\frac{1}{n-\ell}lnPr(\cap_{j=1}^K ${#$D^g_j + \ell \leq $#$D$'#$^g_j$}$_{n-\ell}}$)",
-                '$D_{KL}(\Pi^g || Q^g)$'])
-    plt.title('Baseline student excess error exponent')
-    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\gt_exponent'
-    save_fig(fig, dest_dir, "gt_exponent.png")
-    plt.show()
-
-def regenereate_gt_exponent2(results_path):
-    n_range = np.load(os.path.join(results_path, 'n_range.npy'))
-    exponent_arr = np.load(os.path.join(results_path, 'baseline_exponent_arr.npy'))
-    main_term_arr = np.load(os.path.join(results_path, 'main_term_baseline_arr.npy'))
-    baseline_exponent = []
-    for i, n in enumerate(n_range):
-        p = main_term_arr[i]
-        exponent = -(1 / n) * np.log(p)
-        baseline_exponent.append(exponent)
-
-    fig = plt.figure()
-    plt.plot(n_range, baseline_exponent, n_range, exponent_arr)
-    plt.axhline(y=0.0173, color='r', linestyle='-')
-    plt.ylim([0, 0.5])
-    plt.xlim([n_range[0], n_range[-1]])
-    plt.xlabel('n')
-    plt.ylabel('exponent')
-    plt.legend(['empirical'
-                r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D^g_j \leq $#$D$'#$^g_j$}$_n)$",
-                '$D_{KL}(\Pi^g || Q^g)$'])
-    plt.title('Baseline student excess error exponent')
-    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\gt_exponent'
-    #save_fig(fig, dest_dir, "gt_exponent.png")
+    plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D_j \leq $#$D$'$_j$}$_n)$",
+                r"$-\frac{1}{n-\ell}lnPr(\cap_{j=1}^K ${#$D_j + \ell \leq $#$D$'$_j$}$_{n-\ell}}$)",
+                '$D_{KL}(\Pi || Q)$'])
+    plt.title('Upper and lower bounds on excess error exponent')
+    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\ISIT\example_1\final'
+    #save_fig(fig, dest_dir, "error_exponent.png")
     plt.show()
 
 def regenereate_kd_exponent2(results_path):
     n_range = np.load(os.path.join(results_path, 'n_range.npy'))
-    exponent_arr = np.load(os.path.join(results_path, 'kd_exponent_arr.npy'))
-    exponent_arr = exponent_arr[:len(n_range)]
-    main_term_arr = np.load(os.path.join(results_path, 'main_term_kd_arr.npy'))
-    kd_exponent = []
+    exponent_arr = np.load(os.path.join(results_path, 'exponent_arr.npy'))
+    exponent_ell_arr = np.load(os.path.join(results_path, 'exponent_ell_arr.npy'))
+    main_term_arr = np.load(os.path.join(r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\ICML\example_1\risk_sim', 'main_term_kd_arr.npy'))
+    emp_exponent = []
     for i, n in enumerate(n_range):
         p = main_term_arr[i]
         exponent = -(1 / n) * np.log(p)
-        kd_exponent.append(exponent)
+        emp_exponent.append(exponent)
+
 
     fig = plt.figure()
-    plt.plot(n_range, kd_exponent, n_range, exponent_arr)
-    plt.axhline(y=0.0551, color='r', linestyle='-')
-    plt.ylim([0, 0.8])
-    plt.xlim([n_range[0], n_range[-1]])
+    plt.plot(n_range, exponent_arr, n_range, exponent_ell_arr, n_range, emp_exponent)
+    plt.axhline(y=0.0551, color='r', linestyle='--')
+    plt.ylim([0, 0.5])
+    plt.xlim([n_range[0] - 1, n_range[-1] + 1])
     plt.xlabel('n')
     plt.ylabel('exponent')
-    plt.legend(['empirical'
-                r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D^g_j \leq $#$D$'#$^g_j$}$_n)$",
-                '$D_{KL}(\Pi^t || Q^t)$'])
-    plt.title('KD student excess error exponent')
-    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\teacher_exponent'
-    #save_fig(fig, dest_dir, "gt_exponent.png")
+    plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D_j \leq $#$D$'$_j$}$_n)$",
+                r"$-\frac{1}{n-\ell}lnPr(\cap_{j=1}^K ${#$D_j + \ell \leq $#$D$'$_j$}$_{n-\ell}}$)",
+                r'$-\frac{1}{n}\ln\Pr\left(\hat{\theta}^g_n \notin A_{\theta_0} \mid R_{f_{opt}}(\hat{\theta}^{f_{opt}}_n)<\delta\right)$',
+                '$D_{KL}(\Pi || Q)$'
+                ])
+    #plt.title('Error Exponent of excess error')
+    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\ISIT\example_1\final'
+    save_fig(fig, dest_dir, "emp_error_exponent.png")
+    plt.show()
+
+def regenereate_kd_exponent3(results_path):
+    n_range = np.load(os.path.join(results_path, 'n_range.npy'))
+    #exponent_arr = np.load(os.path.join(results_path, 'exponent_arr.npy'))
+    #exponent_ell_arr = np.load(os.path.join(results_path, 'exponent_ell_arr.npy'))
+    main_term_arr = np.load(os.path.join(r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\ICML\example_1\risk_sim', 'main_term_kd_arr.npy'))
+    emp_exponent = []
+    for i, n in enumerate(n_range):
+        p = main_term_arr[i]
+        exponent = -(1 / n) * np.log(p)
+        emp_exponent.append(exponent)
+
+
+    fig = plt.figure()
+    plt.plot(n_range, emp_exponent)
+    plt.axhline(y=0.0551, color='r', linestyle='--')
+    plt.ylim([0, 0.5])
+    plt.xlim([n_range[0] - 1, n_range[-1] + 1])
+    plt.xlabel('n')
+    plt.ylabel('exponent')
+    plt.legend([r"$-\frac{1}{n}lnPr(\cap_{j=1}^K ${#$D_j \leq $#$D$'$_j$}$_n)$",
+                '$D_{KL}(\Pi || Q)$'
+                ])
+    #plt.title('Error Exponent of excess error')
+    dest_dir = r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\ISIT2024'
+    save_fig(fig, dest_dir, "emp_error_exponent.png")
     plt.show()
 
 
 if __name__=='__main__':
-    #gt_exponent()
     #teacher_exponent()
     #risk_simulation()
     #regenereate_gt_exponent(r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\gt_exponent')
-    regenereate_risk(r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\risk_sim')
-    #regenereate_gt_exponent2(r'C:\Users\AHENDEL\Downloads\sim_results')
-    #regenereate_kd_exponent2(r'C:\Users\AHENDEL\Downloads\sim_results')
+    #regenereate_risk(r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\risk_sim')
+    #regenereate_kd_exponent(r'C:\Users\AHENDEL\OneDrive - Qualcomm\Desktop\master thesis\sim_results\final\example1\teacher_exponent')
+    regenereate_kd_exponent3(r'C:\Users\AHENDEL\Downloads\isit2')

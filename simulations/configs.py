@@ -4,7 +4,7 @@ from src.function_models import BinaryFunction, func_1b, func_2b
 import numpy as np
 
 AllPlots = ["risk", "risk_std", "emp_risk", "gen_error", "parameters","delta_far_prob", "delta_far_prob_term1",  "delta_far_prob_term2"]
-DefaultPlots = ["risk", "risk_std", "parameters", "delta_far_prob", "delta_far_prob_term1",  "delta_far_prob_term2"]
+DefaultPlots = ["risk", "risk_std", "parameters", "delta_far_prob", "main_term"]
 
 
 class ConfigDict:

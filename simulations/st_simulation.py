@@ -29,7 +29,7 @@ class Simulation:
         if self.delta is not None:
             self.metrics += ["delta_far_prob"]
             if self.Aopt is not None:
-                self.metrics += ["delta_far_prob_term1", "delta_far_prob_term2"]
+                self.metrics += ["main_term"] #["delta_far_prob_term1", "delta_far_prob_term2"]
 
 
     @staticmethod
@@ -40,8 +40,9 @@ class Simulation:
             "emp_risk": [],
             "parameters": [],
             "delta_far_prob": [],
-            "delta_far_prob_term1": [],
-            "delta_far_prob_term2": []
+            "main_term": []
+            #"delta_far_prob_term1": [],
+            #"delta_far_prob_term2": []
         }
         return metric_dict
 
@@ -65,6 +66,12 @@ class Simulation:
             for epoch in range(repeatitions):
                 student_set = np.sort(np.array([random.random() for i in range(n)]))
 
+                ###########  realizable ########################################
+                loss_realizable, b_realizable = self.sim_config.gt_func.get_empirical_risk(self.opt_hypoth,
+                                                                                       student_set,
+                                                                                       self.sim_config.student_num_params)
+                student_realizable = BinaryFunction(b_realizable)
+
                 ###########  baseline ########################################
                 # gt_labels = sim.gt_func.get_labels(student_set)
                 loss_baseline, b_baseline = self.sim_config.gt_func.get_empirical_risk(self.sim_config.gt_func, student_set,
@@ -73,7 +80,7 @@ class Simulation:
 
                 ###########  distillation ########################################
                 # teacher_labels = self.sim_config.teacher_func.get_labels(student_set)
-                loss_kd, b_kd = self.sim_config.teacher_func.get_empirical_risk(self.sim_config.teacher_func,  student_set,
+                loss_kd, b_kd = self.sim_config.teacher_func.get_empirical_risk(self.sim_config.teacher_func, student_set,
                                                                                 self.sim_config.student_num_params)
                 student_kd = BinaryFunction(b_kd)
 
@@ -89,15 +96,20 @@ class Simulation:
                 baseline_metrics_n['parameters'].append(b_baseline)
                 kd_metrics_n['parameters'].append(b_kd)
                 if self.delta is not None:
+                    R_fopt_realizable = BinaryFunction.get_risk(self.opt_hypoth, student_realizable)
                     R_fopt_baseline = BinaryFunction.get_risk(self.opt_hypoth, student_baseline)
                     R_fopt_kd = BinaryFunction.get_risk(self.opt_hypoth, student_kd)
                     baseline_metrics_n['delta_far_prob'].append(1 if R_fopt_baseline > self.delta else 0)
                     kd_metrics_n['delta_far_prob'].append(1 if R_fopt_kd > self.delta else 0)
                     if self.Aopt is not None:
-                        baseline_metrics_n['delta_far_prob_term1'].append(1 if (self.Aopt["gt"].contain(b_baseline) and R_fopt_baseline > self.delta) else 0)
-                        baseline_metrics_n['delta_far_prob_term2'].append(1 if (not self.Aopt["gt"].contain(b_baseline)) else 0)
-                        kd_metrics_n['delta_far_prob_term1'].append(1 if (self.Aopt["kd"].contain(b_kd) and R_fopt_kd > self.delta) else 0)
-                        kd_metrics_n['delta_far_prob_term2'].append(1 if (not self.Aopt["kd"].contain(b_kd)) else 0)
+                        if R_fopt_realizable < self.delta:
+                            baseline_metrics_n['main_term'].append(1 if (not self.Aopt["gt"].contain(b_baseline)) else 0)
+                            kd_metrics_n['main_term'].append(1 if (not self.Aopt["kd"].contain(b_kd)) else 0)
+
+                        #baseline_metrics_n['delta_far_prob_term1'].append(1 if (self.Aopt["gt"].contain(b_baseline) and R_fopt_baseline > self.delta) else 0)
+                        #baseline_metrics_n['delta_far_prob_term2'].append(1 if (not self.Aopt["gt"].contain(b_baseline)) else 0)
+                        #kd_metrics_n['delta_far_prob_term1'].append(1 if (self.Aopt["kd"].contain(b_kd) and R_fopt_kd > self.delta) else 0)
+                        #kd_metrics_n['delta_far_prob_term2'].append(1 if (not self.Aopt["kd"].contain(b_kd)) else 0)
 
 
             ########### average over epochs ########################################
@@ -117,10 +129,14 @@ class Simulation:
                 baseline_metrics["delta_far_prob"].append(np.mean(baseline_metrics_n['delta_far_prob']))
                 kd_metrics["delta_far_prob"].append(np.mean(kd_metrics_n['delta_far_prob']))
                 if self. Aopt is not None:
-                    baseline_metrics["delta_far_prob_term1"].append(np.mean(baseline_metrics_n['delta_far_prob_term1']))
-                    kd_metrics["delta_far_prob_term1"].append(np.mean(kd_metrics_n['delta_far_prob_term1']))
-                    baseline_metrics["delta_far_prob_term2"].append(np.mean(baseline_metrics_n['delta_far_prob_term2']))
-                    kd_metrics["delta_far_prob_term2"].append(np.mean(kd_metrics_n['delta_far_prob_term2']))
+                    baseline_metrics["main_term"].append(np.mean(baseline_metrics_n['main_term']))
+                    kd_metrics["main_term"].append(np.mean(kd_metrics_n['main_term']))
+
+
+                    #baseline_metrics["delta_far_prob_term1"].append(np.mean(baseline_metrics_n['delta_far_prob_term1']))
+                    #kd_metrics["delta_far_prob_term1"].append(np.mean(kd_metrics_n['delta_far_prob_term1']))
+                    #baseline_metrics["delta_far_prob_term2"].append(np.mean(baseline_metrics_n['delta_far_prob_term2']))
+                    #kd_metrics["delta_far_prob_term2"].append(np.mean(kd_metrics_n['delta_far_prob_term2']))
 
         if self.multi_proc:
             return_results.append([kd_metrics, baseline_metrics])
@@ -248,6 +264,19 @@ class Simulation:
                 save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob.png")
                 save_data(self.baseline_metrics["delta_far_prob"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_baseline_arr")
                 save_data(self.kd_metrics["delta_far_prob"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "delta_far_prob_kd_arr")
+
+        if "main_term" in self.sim_config.plots and self.Aopt is not None:
+            fig = plt.figure()
+            plt.plot(x_axis, self.baseline_metrics["main_term"], 'b', x_axis, self.kd_metrics["main_term"], 'r')
+            plt.title(f"main term as function of number of training examples")
+            plt.legend(["baseline student", "KD student"])
+            plt.xlabel("number of training examples")
+            plt.ylabel("probability")
+            if self.sim_config.dest_dir is not None:
+                Path(self.sim_config.dest_dir).mkdir(parents=True, exist_ok=True)
+                save_fig(fig, os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "main_term.png")
+                save_data(self.baseline_metrics["main_term"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "main_term_baseline_arr")
+                save_data(self.kd_metrics["main_term"], os.path.join(self.sim_config.dest_dir, self.sim_config.tag), "main_term_kd_arr")
 
         if "delta_far_prob_term1" in self.sim_config.plots and self.Aopt is not None:
             fig = plt.figure()

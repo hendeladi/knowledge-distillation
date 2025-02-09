@@ -2,36 +2,6 @@ import numpy as np
 import itertools
 
 
-def func_1b(b, x):
-    out = [0 if i < b else 1 for i in x]
-    return np.array(out)
-
-
-def func_2b(b1, b2, x):
-    out = [0 if i < b1 else 1 if i < b2 else 0 for i in x]
-    return np.array(out)
-
-
-class BaseFunction:
-    def __init__(self, parameters):
-        self.parameters = parameters
-
-    def get_labels(self, x):
-        pass
-
-    def get_risk(self, func_obj):
-        pass
-
-    def get_approx_hypoth(self, param_approx):
-        pass
-
-    def get_empirical_risk(self, features, param_approx):
-        pass
-
-    def __str__(self):
-        return str(self.parameters)
-
-
 class BinaryFunction:
     def __init__(self, parameters):
         if isinstance(parameters, int):
